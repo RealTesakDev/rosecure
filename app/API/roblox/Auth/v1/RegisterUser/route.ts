@@ -1,9 +1,8 @@
 // app/API/roblox/Auth/v1/RegisterUser/route.ts (new file)
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserByUsername, generateUserId, generateKey, getAllUsers, updateUsers } from '@/app/lib/edge-config';
 
-export const runtime = 'nodejs'; // Use Node.js runtime for updates
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
