@@ -1,12 +1,13 @@
+// app/page.tsx (updated, removed email/signup, now username/key login)
+
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -17,26 +18,19 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          action: isLogin ? 'login' : 'signup'
-        })
-      });
+      const url = `/API/Web/Auth/v1/Login?username=${encodeURIComponent(username)}&key=${encodeURIComponent(key)}`;
+      const response = await fetch(url);
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Something went wrong');
+        setError(data.message || 'Something went wrong');
         setLoading(false);
         return;
       }
 
       if (data.success) {
-        // Store user data in sessionStorage (in production, use proper auth)
-        sessionStorage.setItem('user', JSON.stringify(data.user || { email, username }));
+        // Cookie is set by server, redirect to dashboard
         router.push('/dashboard');
       }
     } catch (err) {
@@ -50,45 +44,43 @@ export default function Home() {
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Whitelisted Access
+            User Login
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            {isLogin ? 'Sign in to your account' : 'Create your account'}
+            Sign in with your username and key
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email Address
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Username
             </label>
             <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-              placeholder="your@email.com"
+              placeholder="johndoe"
             />
           </div>
 
-          {!isLogin && (
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required={!isLogin}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                placeholder="johndoe"
-              />
-            </div>
-          )}
+          <div>
+            <label htmlFor="key" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Key
+            </label>
+            <input
+              id="key"
+              type="text"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              required
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+              placeholder="XXX-XXX-XXX"
+            />
+          </div>
 
           {error && (
             <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
@@ -101,27 +93,15 @@ export default function Home() {
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-3 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
           >
-            {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Sign Up'}
+            {loading ? 'Processing...' : 'Sign In'}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError('');
-            }}
-            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors"
-          >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-          </button>
-        </div>
-
         <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-            Only whitelisted email addresses can access this service.
+            Access requires a valid username and key.
             <br />
-            Contact your administrator for access.
+            Contact your administrator for credentials.
           </p>
         </div>
       </div>
