@@ -1,3 +1,6 @@
+// app/lib/edge-config.ts (updated)
+// Note: Renamed from edge-config.ts and moved to lib for convention
+
 import { get } from '@vercel/edge-config';
 
 export interface User {
@@ -22,6 +25,38 @@ export async function getAllUsers(): Promise<UsersData> {
   } catch (error) {
     console.error('Error fetching users:', error);
     return {};
+  }
+}
+
+// Update all users in Edge Config
+export async function updateUsers(users: UsersData): Promise<void> {
+  const edgeConfigId = process.env.EDGE_CONFIG_ID;
+  const token = process.env.VERCEL_API_TOKEN;
+
+  if (!edgeConfigId || !token) {
+    throw new Error('Missing environment variables for Edge Config update');
+  }
+
+  const response = await fetch(`https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      items: [
+        {
+          operation: 'upsert',
+          key: 'users',
+          value: users,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to update Edge Config: ${error}`);
   }
 }
 
