@@ -1,35 +1,30 @@
-// app/API/roblox/Auth/v1/ResetHwid/route.ts (new file)
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserByKey, canResetHwid, getAllUsers, updateUsers } from '@/app/lib/edge-config';
 
-export const runtime = 'nodejs'; // Use Node.js runtime for updates
+export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
-  const key = searchParams.get('key');
+export async function POST(request: NextRequest) {
+  const { key, newHwid } = await request.json();
 
-  if (!key) {
-    return NextResponse.json({ success: false, message: 'Missing key' }, { status: 400 });
+  if (!key || !newHwid) {
+    return NextResponse.json({ success: false, message: 'Missing required parameters' }, { status: 400 });
   }
 
-  const userData = await getUserByKey(key);
-  if (!userData) {
-    return NextResponse.json({ success: false, message: 'Invalid key' }, { status: 401 });
+  const user = await getUserByKey(key);
+  if (!user) {
+    return NextResponse.json({ success: false, message: 'Invalid key' }, { status: 404 });
   }
 
-  const { username, user } = userData;
-
-  if (!canResetHwid(user.lastHwidReset)) {
-    return NextResponse.json({ success: false, message: 'HWID reset cooldown active (24 hours)' }, { status: 429 });
+  if (!(await canResetHwid(user))) {
+    return NextResponse.json({ success: false, message: 'Cannot reset HWID at this time' }, { status: 403 });
   }
-
-  user.Hwid = '';
-  user.lastHwidReset = new Date().toISOString();
 
   const allUsers = await getAllUsers();
-  allUsers[username] = user;
-  await updateUsers(allUsers);
+  const username = Object.keys(allUsers).find(u => allUsers[u].Key === key);
+  if (username) {
+    allUsers[username].Hwid = newHwid;
+    await updateUsers(allUsers);
+  }
 
-  return NextResponse.json({ success: true, message: 'HWID reset successful' });
+  return NextResponse.json({ success: true, message: 'HWID reset successfully' });
 }
